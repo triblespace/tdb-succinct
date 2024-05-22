@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 use minibytes::Bytes;
-use bytes::BytesMut;
+use memmap2::Mmap;
 use tokio::fs::File;
-use tokio::io::{self, AsyncReadExt, AsyncSeekExt, BufWriter};
+use tokio::io::{self, AsyncSeekExt, BufWriter};
 
 use super::{FileLoad, FileStore, SyncableFile};
 
@@ -65,19 +65,9 @@ impl FileLoad for FileBackedStore {
         if size == 0 {
             Ok(Bytes::new())
         } else {
-            let mut f = self.open_read().await?;
-            let mut b = BytesMut::with_capacity(size);
-
-            // unsafe justification: We are immediately
-            // overwriting the data in this BytesMut with the file
-            // contents, so it doesn't matter that it is
-            // uninitialized.
-            // Should file reading fail, an error will be
-            // returned, and the BytesMut will be freed, ensuring
-            // nobody ever looks at the initialized data.
-            unsafe { b.set_len(size) };
-            f.read_exact(&mut b[..]).await?;
-            Ok(b.freeze().into())
+            let f = self.open_read().await?;
+            let mmap = unsafe { Mmap::map(&f)?  };
+            Ok(mmap.into())
         }
     }
 }
