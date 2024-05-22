@@ -5,7 +5,8 @@ use std::{
 };
 
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut};
+use minibytes::Bytes;
+use bytes::BytesMut;
 use tokio::io::{self, AsyncRead, AsyncWrite, ReadBuf};
 
 use super::types::{FileLoad, FileStore, SyncableFile};
@@ -37,7 +38,7 @@ pub struct MemoryBackedStoreWriter {
 impl SyncableFile for MemoryBackedStoreWriter {
     async fn sync_all(self) -> io::Result<()> {
         let mut contents = self.file.contents.write().unwrap();
-        *contents = MemoryBackedStoreContents::Existent(self.bytes.freeze());
+        *contents = MemoryBackedStoreContents::Existent(self.bytes.freeze().into());
 
         Ok(())
     }

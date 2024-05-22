@@ -53,7 +53,8 @@ use crate::storage::{FileLoad, SyncableFile};
 
 use super::util::{self, calculate_width};
 use byteorder::{BigEndian, ByteOrder};
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, BytesMut};
+use minibytes::Bytes;
 use futures::stream::{Stream, StreamExt};
 use std::{cmp::Ordering, convert::TryFrom, error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -83,10 +84,10 @@ pub struct LogArray {
     /// Bit width of each element
     width: u8,
 
-    /// Shared reference to the input buffer
+    /// Shared reference to the backing buffer
     ///
     /// Index 0 points to the first byte of the first element. The last word is the control word.
-    input_buf: Bytes,
+    buf: Bytes,
 }
 
 impl std::fmt::Debug for LogArray {
@@ -276,23 +277,25 @@ impl LogArray {
             first: 0,
             len,
             width,
-            input_buf,
+            buf: input_buf,
         })
     }
 
-    pub fn parse_header_first(mut input_buf: Bytes) -> Result<(LogArray, Bytes), LogArrayError> {
+    pub fn parse_header_first(input_buf: Bytes) -> Result<(LogArray, Bytes), LogArrayError> {
         let input_buf_size = input_buf.len();
         LogArrayError::validate_input_buf_size(input_buf_size)?;
         let (len, width) = read_control_word_trailing(&input_buf[..8], input_buf_size)?;
         let num_bytes = logarray_length_from_len_width(len, width);
-        input_buf.advance(8);
-        let rest = input_buf.split_off(num_bytes);
+        let input_buf = input_buf.slice(8..);
+        let rest = input_buf.slice(num_bytes..);
+        let buf = input_buf.slice(..num_bytes);
+
         Ok((
             LogArray {
                 first: 0,
                 len,
                 width,
-                input_buf,
+                buf,
             },
             rest,
         ))
@@ -331,7 +334,7 @@ impl LogArray {
         // Calculate the byte index from the bit index.
         let byte_index = bit_index >> 6 << 3;
 
-        let buf = &self.input_buf;
+        let buf = &self.buf;
 
         // Read the first word.
         let first_word = BigEndian::read_u64(&buf[byte_index..]);
@@ -399,7 +402,7 @@ impl LogArray {
             first: self.first + offset,
             len,
             width: self.width,
-            input_buf: self.input_buf.clone(),
+            buf: self.buf.clone(),
         }
     }
 }
@@ -1061,7 +1064,7 @@ mod tests {
         let buf = BytesMut::new();
         let mut builder = LateLogArrayBufBuilder::new(buf);
         builder.push(0);
-        let logarray_buf = builder.finalize().freeze();
+        let logarray_buf = builder.finalize().freeze().into();
         let logarray = LogArray::parse(logarray_buf).unwrap();
         assert_eq!(logarray.entry(0_usize), 0_u64);
     }

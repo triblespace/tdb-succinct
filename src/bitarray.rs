@@ -34,7 +34,8 @@ use super::util;
 use crate::bititer::BitIter;
 use crate::storage::{FileLoad, SyncableFile};
 use byteorder::{BigEndian, ByteOrder};
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
+use minibytes::Bytes;
 use futures::io;
 use futures::stream::{Stream, StreamExt, TryStreamExt};
 use std::{convert::TryFrom, error, fmt};
@@ -151,13 +152,14 @@ fn read_control_word(buf: &[u8], input_buf_size: usize) -> Result<u64, BitArrayE
 
 impl BitArray {
     /// Construct a `BitArray` by parsing a `Bytes` buffer.
-    pub fn from_bits(mut buf: Bytes) -> Result<BitArray, BitArrayError> {
+    pub fn from_bits(buf: Bytes) -> Result<BitArray, BitArrayError> {
         let input_buf_size = buf.len();
         BitArrayError::validate_input_buf_size(input_buf_size)?;
 
-        let len = read_control_word(&buf.split_off(input_buf_size - 8), input_buf_size)?;
+        let len = read_control_word(&buf.slice((input_buf_size - 8)..), input_buf_size)?;
 
-        Ok(BitArray { buf, len })
+        Ok(BitArray { buf: buf.slice(..(input_buf_size - 8)),
+                      len })
     }
 
     /// Returns a reference to the buffer slice.
@@ -521,7 +523,7 @@ mod tests {
         })
         .unwrap();
 
-        let loaded = block_on(x.map()).unwrap();
+        let loaded = block_on(x.map()).unwrap().into();
 
         let bitarray = BitArray::from_bits(loaded).unwrap();
 
@@ -546,7 +548,7 @@ mod tests {
         })
         .unwrap();
 
-        let loaded = block_on(x.map()).unwrap();
+        let loaded = block_on(x.map()).unwrap().into();
 
         let bitarray = BitArray::from_bits(loaded).unwrap();
 

@@ -2,7 +2,7 @@
 use byteorder::{BigEndian, ByteOrder};
 use bytes::Buf;
 use bytes::BufMut;
-use bytes::Bytes;
+use minibytes::Bytes;
 use itertools::Itertools;
 
 use crate::storage::SyncableFile;
@@ -515,9 +515,9 @@ mod tests {
         .unwrap();
 
         let index = BitIndex::from_maps(
-            block_on(bits.map()).unwrap(),
-            block_on(index_blocks.map()).unwrap(),
-            block_on(index_sblocks.map()).unwrap(),
+            block_on(bits.map()).unwrap().into(),
+            block_on(index_blocks.map()).unwrap().into(),
+            block_on(index_sblocks.map()).unwrap().into(),
         );
 
         for i in 0..123456 {
@@ -549,9 +549,9 @@ mod tests {
         .unwrap();
 
         let index = BitIndex::from_maps(
-            block_on(bits.map()).unwrap(),
-            block_on(index_blocks.map()).unwrap(),
-            block_on(index_sblocks.map()).unwrap(),
+            block_on(bits.map()).unwrap().into(),
+            block_on(index_blocks.map()).unwrap().into(),
+            block_on(index_sblocks.map()).unwrap().into(),
         );
 
         for i in 1..(123456 / 3) {

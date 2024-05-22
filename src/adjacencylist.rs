@@ -14,7 +14,7 @@ use std::convert::TryInto;
 use std::io;
 use std::pin::Pin;
 
-use bytes::Bytes;
+use minibytes::Bytes;
 use bytes::BytesMut;
 
 use crate::storage::{FileLoad, FileStore, SyncableFile};
@@ -303,7 +303,7 @@ impl UnindexedAdjacencyListBufBuilder {
         let ba = self.bitarray.finalize();
         let nums = self.nums.finalize();
 
-        (ba.freeze(), nums.freeze())
+        (ba.freeze().into(), nums.freeze().into())
     }
 
     pub fn count(&self) -> u64 {
@@ -430,8 +430,8 @@ impl AdjacencyListBufBuilder {
         AdjacencyListBuffers {
             nums,
             bits: bitfile,
-            bitindex_blocks: bitindex_blocks.freeze(),
-            bitindex_sblocks: bitindex_sblocks.freeze(),
+            bitindex_blocks: bitindex_blocks.freeze().into(),
+            bitindex_sblocks: bitindex_sblocks.freeze().into(),
         }
     }
 

@@ -2,7 +2,8 @@ use std::io::SeekFrom;
 use std::path::PathBuf;
 
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut};
+use minibytes::Bytes;
+use bytes::BytesMut;
 use tokio::fs::File;
 use tokio::io::{self, AsyncReadExt, AsyncSeekExt, BufWriter};
 
@@ -76,7 +77,7 @@ impl FileLoad for FileBackedStore {
             // nobody ever looks at the initialized data.
             unsafe { b.set_len(size) };
             f.read_exact(&mut b[..]).await?;
-            Ok(b.freeze())
+            Ok(b.freeze().into())
         }
     }
 }

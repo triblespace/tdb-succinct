@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use bytes::{Buf, Bytes};
+use bytes::Buf;
+use minibytes::Bytes;
 use tokio::io::{self, AsyncRead, AsyncWrite, AsyncWriteExt};
 
 use crate::{AdjacencyList, BitIndex};
